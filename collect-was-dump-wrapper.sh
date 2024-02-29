@@ -67,10 +67,8 @@ go() {
       # !!! IMPORTANT !!!
       # MAKE SURE THE JAR FILE NAME IS surgery.jar AND PUT UNDER THE CURRENT WORKING DIRECTORY!!!
 
-      #"$FULLEXE" -jar ./surgery.jar -command JavaDump -pid "$MYPID" > /dev/null 2>&1
-      "$FULLEXE" -jar ./surgery.jar -command JavaDump -pid "$MYPID"
-      #"$FULLEXE" -jar ./surgery.jar -command HeapDump -pid "$MYPID" > /dev/null 2>&1
-      "$FULLEXE" -jar ./surgery.jar -command HeapDump -pid "$MYPID"
+      "$FULLEXE" -jar ./surgery.jar -command JavaDump -pid "$MYPID" > /dev/null 2>&1
+      "$FULLEXE" -jar ./surgery.jar -command HeapDump -pid "$MYPID" > /dev/null 2>&1
 
       # need to wait some time for the dump files finishing generated
       # Do we really still need this?
