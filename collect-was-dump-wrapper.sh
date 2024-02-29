@@ -64,15 +64,13 @@ go() {
       [ "$JVMVERSION" -lt 8 ] && echo "Only JDK 8 and above supported, however your JDK is $JVMVERSION" && exit 122
 
       # prepare the java surgery agent
-      # i.e. link the jar to the home dir of the user
-      rm -fr "$HOME"/surgery.jar
-      ln -s ./surgery-no-doc.jar "$HOME"/surgery.jar
+      # !!! IMPORTANT !!!
+      # MAKE SURE THE JAR FILE NAME IS surgery.jar AND PUT UNDER THE CURRENT WORKING DIRECTORY!!!
 
-      "$FULLEXE" -jar ./surgery-no-doc.jar -command JavaDump -pid "$MYPID" > /dev/null 2>&1
-      "$FULLEXE" -jar ./surgery-no-doc.jar -command HeapDump -pid "$MYPID" > /dev/null 2>&1
-
-      # clean up the agent jar
-      rm -fr "$HOME"/surgery.jar
+      #"$FULLEXE" -jar ./surgery.jar -command JavaDump -pid "$MYPID" > /dev/null 2>&1
+      "$FULLEXE" -jar ./surgery.jar -command JavaDump -pid "$MYPID"
+      #"$FULLEXE" -jar ./surgery.jar -command HeapDump -pid "$MYPID" > /dev/null 2>&1
+      "$FULLEXE" -jar ./surgery.jar -command HeapDump -pid "$MYPID"
 
       # need to wait some time for the dump files finishing generated
       # Do we really still need this?
