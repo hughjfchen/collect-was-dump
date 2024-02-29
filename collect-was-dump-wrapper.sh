@@ -66,10 +66,10 @@ go() {
       # prepare the java surgery agent
       # i.e. link the jar to the home dir of the user
       rm -fr "$HOME"/surgery.jar
-      ln -s surgery-no-doc.jar "$HOME"/surgery.jar
+      ln -s ./surgery-no-doc.jar "$HOME"/surgery.jar
 
-      "$FULLEXE" -jar "$HOME"/surgery.jar -command JavaDump -pid "$MYPID" > /dev/null 2>&1
-      "$FULLEXE" -jar "$HOME"/surgery.jar -command HeapDump -pid "$MYPID" > /dev/null 2>&1
+      "$FULLEXE" -jar ./surgery-no-doc.jar -command JavaDump -pid "$MYPID" > /dev/null 2>&1
+      "$FULLEXE" -jar ./surgery-no-doc.jar -command HeapDump -pid "$MYPID" > /dev/null 2>&1
 
       # clean up the agent jar
       rm -fr "$HOME"/surgery.jar
