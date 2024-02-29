@@ -12,17 +12,13 @@ is_uint() {
 go() {
   local MYPID
   local FULLEXE
-  local PROCESSWD
   local PROCESSUSER
   local CURRENTUSER
   local JVMVERSION
   local JVMNAME
   local JVMTYPE
   local DUMPDATE
-  #local DUMPTIME
-  local ENV_IBM_JAVACOREDIR
-  local ENV_IBM_HEAPDUMPDIR
-  local ENV_TMPDIR
+  local DUMPTIME
   local THREADDUMPFILE
   local HEAPDUMPFILE
 
@@ -41,7 +37,6 @@ go() {
   # the user running this script must be the same as the JVM process
   [ "$PROCESSUSER" != "$CURRENTUSER" ] && echo "the JVM process $MYPID user is $PROCESSUSER, your user name is $CURRENTUSER. It must be the same to run this script" && exit 126
 
-  PROCESSWD="$(pwdx "$MYPID" | awk '{print $NF}')"
   JVMNAME="$($FULLEXE -version 2>&1 | grep -v grep | grep ' VM ' | grep 'build')"
 
   # get the jvm type
@@ -54,7 +49,7 @@ go() {
   done
 
   DUMPDATE=$(date "+%Y%m%d")
-  #DUMPTIME=$(date "+%H%M%S")
+  DUMPTIME=$(date "+%H%M%S")
 
   # only IBM J9 VM is supported in this script.
   case "$JVMTYPE" in
@@ -63,51 +58,18 @@ go() {
       JVMVERSION="$($FULLEXE -fullversion 2>&1|awk -F'.' '{print $2}')"
       [ "$JVMVERSION" -lt 8 ] && echo "Only JDK 8 and above supported, however your JDK is $JVMVERSION" && exit 122
 
-      # prepare the java surgery agent
-      # !!! IMPORTANT !!!
-      # MAKE SURE THE JAR FILE NAME IS surgery.jar AND PUT UNDER THE CURRENT WORKING DIRECTORY!!!
+      THREADDUMPFILE="/tmp/javacore.$DUMPDATE.$DUMPTIME.$MYPID.txt"
+      HEAPDUMPFILE="/tmp/heapdump.$DUMPDATE.$DUMPTIME.$MYPID.phd"
 
-      "$FULLEXE" -jar ./surgery.jar -command JavaDump -pid "$MYPID" > /dev/null 2>&1
-      "$FULLEXE" -jar ./surgery.jar -command HeapDump -pid "$MYPID" > /dev/null 2>&1
+      ./jattach "$MYPID" threaddump > "$THREADDUMPFILE"
+      ./jattach "$MYPID" dumpheap "$HEAPDUMPFILE" > /dev/null
 
-      # need to wait some time for the dump files finishing generated
-      # Do we really still need this?
-      # comment out for now
-      # sleep "$SECONDSTOSLEEP"
-
-      # now find the generated dumps
-      # the order to search is ENV IBM_XXXXDIR -> WorkingDir -> ENV TMPDIR -> /tmp
-      # under environment varibale IBM_JAVACOREDIR/IBM_HEAPDUMPDIR/TMPDIR, the working directory of the process or /tmp
-      ENV_IBM_JAVACOREDIR="$(strings /proc/"$MYPID"/environ | awk -F'=' '/IBM_JAVACOREDIR/ {print $2}')"
-      ENV_IBM_HEAPDUMPDIR="$(strings /proc/"$MYPID"/environ | awk -F'=' '/IBM_HEAPDUMPDIR/ {print $2}')"
-      ENV_TMPDIR="$(strings /proc/"$MYPID"/environ | awk -F'=' '/TMPDIR/ {print $2}')"
-
-      # notice that the search path order is really very important.
-      JAVACORESEARCHDIR=""
-      for THEJAVACORESEARCHDIR in "/tmp" "$ENV_TMPDIR" "$PROCESSWD" "$ENV_IBM_JAVACOREDIR"
-      do
-        if [ "X$THEJAVACORESEARCHDIR" != "X" ] && [ -d "$THEJAVACORESEARCHDIR" ]; then
-          JAVACORESEARCHDIR="$THEJAVACORESEARCHDIR"
-        fi
-      done
-
-      HEAPDUMPSEARCHDIR=""
-      for THEHEAPDUMPSEARCHDIR in "/tmp" "$ENV_TMPDIR" "$PROCESSWD" "$ENV_IBM_HEAPDUMPDIR"
-      do
-        if [ "X$THEHEAPDUMPSEARCHDIR" != "X" ] && [ -d "$THEHEAPDUMPSEARCHDIR" ]; then
-          HEAPDUMPSEARCHDIR="$THEHEAPDUMPSEARCHDIR"
-        fi
-      done
-
-      THREADDUMPFILE=$(find "$JAVACORESEARCHDIR" ! -path "$JAVACORESEARCHDIR" -prune -name "javacore.$DUMPDATE.*.$MYPID.*" -print0 | xargs -r0 ls -t | head -1)
-      HEAPDUMPFILE=$(find "$HEAPDUMPSEARCHDIR" ! -path "$HEAPDUMPSEARCHDIR" -prune -name "heapdump.$DUMPDATE.*.$MYPID.*" -print0 | xargs -r0 ls -t | head -1)
-
-      if [ "X$THREADDUMPFILE" == "X" ] && [ "X$HEAPDUMPFILE" == "X" ]; then
-        echo "cannot find the generated javadump/heapdump files for IBM J9 VM"
-        exit 122
-      else
+      if [ -e "$THREADDUMPFILE" ] && [ -e "$HEAPDUMPFILE" ]; then
         echo "$THREADDUMPFILE"
         echo "$HEAPDUMPFILE"
+      else
+        echo "cannot find the generated javadump/heapdump files"
+        exit 122
       fi
       ;;
     *)
